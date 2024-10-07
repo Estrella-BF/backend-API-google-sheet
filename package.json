@@ -8,6 +8,8 @@
     "google-auth-library": "^9.14.1",
     "google-spreadsheet": "^4.1.4",
     "googleapis": "^105.0.0",
+    "mongodb": "^6.9.0",
+    "mongoose": "^8.7.0",
     "path": "^0.12.7"
   }
 }

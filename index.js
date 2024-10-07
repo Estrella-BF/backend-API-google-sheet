@@ -1,131 +1,72 @@
 const express = require("express");
-
-const {google} = require("googleapis");
+const { MongoClient, ServerApiVersion } = require("mongodb");
 
 const app = express();
 
 const PORT = process.env.PORT ?? 3000;
 
-const SCOPES1 = 'https://www.googleapis.com/auth/spreadsheets';
-const spreadsheetId = "196IGk7Ev9_fLCD-_dp0qbwacLLyVKTHu";
-const spreadsheetIdTEST="1QMvdCjccg6ontYrSPuEsDkq9i1XTDte52AMm1U-oEvY"
-const SCOPES = ['https://www.googleapis.com/auth/spreadsheets'];
-// const SCOPES = ['https://www.googleapis.com/auth/spreadsheets', 'https://www.googleapis.com/auth/drive']
+// mongoDB
+const password = encodeURIComponent("admin");
+const uri = `mongodb+srv://estrella:${password}@cluster0.vuvof.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0`;
 
-
-app.get("/pollo", async (req, res) => {
-    const auth = new google.auth.GoogleAuth({
-        keyFile: './service-account-test.json',
-        scopes: "https://www.googleapis.com/auth/spreadsheets"
-    });
-
-   // Create client instance for auth
-    const client = await auth.getClient();
-
-    // Instance of Google Sheets API
-    const googleSheets = google.sheets({version: 'v4', auth});
-
-    // Get metadata about spreadsheet
-    const metadata = await googleSheets.spreadsheets.get({
-        auth,
-        spreadsheetId: spreadsheetIdTEST 
-    });
-
-    // Read rows from spreadsheet
-    const getRows = await googleSheets.spreadsheets.values.get({
-        auth,
-        spreadsheetId: spreadsheetIdTEST,
-        range: "Sheet1!A:A"
-    });
-
-    // Write row(s) to spreadsheet
-/*     await googleSheets.spreadsheets.values.append({
-        auth,
-        spreadsheetId: spreadsheetIdTEST,
-        range: "Sheet1!A:B",
-        valueInputOption: "USER_ENTERED", // or RAW
-        resource: {
-            values: [
-               [ "1 ColA", "1 ColB"],
-               [ "2 ColA", "2 ColB"]
-            ]
-        }
-    }) */
-
-    // update?
-    await googleSheets.spreadsheets.values.append({
-        auth,
-        spreadsheetId: spreadsheetIdTEST,
-        range: "Sheet1!A:B",
-        valueInputOption: "USER_ENTERED", // or RAW
-        resource: {
-            values: [
-               [ "1 ColA", "1 ColB"],
-               [ "2 ColA", "2 ColB"]
-            ]
-        }
-    })
-    console.log('---getRows:', getRows.data);
-    res.status(200).json({saludo: 'pollo'})  
+const DATABASE_NAME = "ESPACIO_INTERIOR_DEV";
+const RESERVATION_COLLECTION = "reservations";
+const client = new MongoClient(uri, {
+  serverApi: {
+    version: ServerApiVersion.v1,
+    strict: true,
+    deprecationErrors: true,
+  }
 });
+const database = client.db(DATABASE_NAME);
 
-/*
-// FUNCIONA A MEDIAS
-const auth = new google.auth.GoogleAuth({
-    keyFile: './service-account-test.json',
-    scopes: SCOPES
-});
+const collection = database.collection(RESERVATION_COLLECTION);
 
-async function writeToSheet(values) {
-    const sheets = google.sheets({version: 'v4', auth});
-    const range = 'Sheet1!A1:A2';
-    const valueInputOption= 'USER_ENTERED';
-    const resource = {values}
-
-    try {
-        const res = await sheets.spreadsheets.values.update({
-            spreadsheetId: spreadsheetIdTEST, range, valueInputOption, resource
-        });
-        console.log('--writeToSheet res: ', res);
-        return res;
-    } catch(error) {
-        console.log('--writeToSheet error:', error)
-    }
+/* 
+// Revisar que 
+async function run() {
+  try {
+    const db = client.db("myDB");
+    const myColl = db.collection("myColl");
+    const doc = await myColl.findOne({});
+    console.log('.----dioc:', doc);
+  } finally {
+    await client.close();
+  }
 }
+run().catch(console.dir);  */
 
-(async()=> {
-    const writer = await writeToSheet([['Name, age'], ['Pollo', 13]]);
-    console.log('--writeToSheet writer:', writer)
-})();
-*/
+app.get('/year/:year/:month/:day', async(req, res) => {
+  const { params } = req
+  const { year, month, day } = params;
+  console.log('--PPARAMS:', params)
+  const getData =  await collection.findOne({});
+/*   const year = 2024;
+  const month = 'january';
+  const day = 13; */
+  const office = 'cedro-SI-01';
+  const keyParam = `years.${year}.${month}.${day}.${office}`;
+  const objParam = {}
+  // const filter= { "years.2024.january.13.cedro-SI-01": { "$exists": true } }
 
-// app.set("view engine", "ejs");
-/*
-app.get("/", (req, res) => {
-    res.send("holi start")
-})
+  objParam[keyParam] = { "$exists": true };
+  // const filter = { keyParam : { "$exists": true } }
+  console.log('----objParam', objParam)
 
-app.get("/google", async (req, res) => {
-    const auth = new google.auth.GoogleAuth({
-        keyFile: "credentials.json",
-        scopes: SCOPES
-    });
-    // Create client instance for auth
-    const client = await auth.getClient();
+  // const getInfo = await collection.find(filter).toArray();
+  const getInfo = await collection.find(objParam).toArray();
 
-    // Instance of Google Sheets API
-    const googleSheets = google.sheets({ version: "v4", auth: client });
-
-    // Get metadata about spreadsheet
-     const metadata = await googleSheets.spreadsheets.get({
-        auth,
-        spreadsheetId
-    });
-    console.log('-metadata:', metadata)
-    res.send(metadata)
+  console.log('----getInfo', getInfo)
+  res.status(200).json({
+    'getInfo': getInfo,
+  })  
 });
 
-*/
+
+// first: Select a day
+
+
+
 app.listen(PORT, () => {
     console.log('Server running on port:', PORT)
 });
